@@ -1,0 +1,72 @@
+.events-page {
+  padding: 20px 40px;
+}
+
+.event-post-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 15px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.event-post-box input,
+.event-post-box textarea {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: #111;
+  color: white;
+  width: 100%;
+}
+
+.event-post-box button {
+  width: 150px;
+  padding: 8px 16px;
+  align-self: flex-end;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(45deg, #9d4edd, #5a189a);
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 0 15px #9d4edd66;
+}
+
+.event-search {
+  width: 100%;
+  margin-bottom: 15px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: #111;
+  color: white;
+}
+
+.events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.event-card {
+  padding: 15px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.event-card a {
+  color: #c77dff;
+  text-decoration: underline;
+}
+
+.posted-by {
+  font-size: 0.8rem;
+  color: #aaa;
+  margin-top: 5px;
+}
