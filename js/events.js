@@ -1,0 +1,96 @@
+import { supabase, requireAuth, ensureVerified } from "./supabaseClient.js";
+
+const eventsList = document.getElementById("events-list");
+const evName = document.getElementById("ev-name");
+const evDate = document.getElementById("ev-date");
+const evDesc = document.getElementById("ev-desc");
+const evLink = document.getElementById("ev-link");
+const evBtn = document.getElementById("ev-btn");
+
+async function initEvents() {
+  const session = await requireAuth();
+  if (!session) return;
+  if (!ensureVerified(session)) return;
+
+  async function refresh() {
+    const { data, error } = await supabase
+      .from("events")
+      .select("*")
+      .order("event_date", { ascending: true });
+    if (error) {
+      console.error(error);
+      return;
+    }
+    eventsList.innerHTML = "";
+    if (!data || data.length === 0) {
+      eventsList.innerHTML =
+        '<div class="empty-state">No events yet. Share upcoming hackathons, workshops, or club activities.</div>';
+      return;
+    }
+    data.forEach((e) => {
+      const el = document.createElement("article");
+      el.className = "card";
+      el.innerHTML = `
+        <header class="card-header">
+          <div class="user-chip">
+            <div class="avatar">E</div>
+            <div class="user-meta">
+              <span class="user-meta-name">${e.name}</span>
+              <span class="user-meta-sub">
+                ${e.event_date ? new Date(e.event_date).toLocaleString() : ""}
+              </span>
+            </div>
+          </div>
+          <span class="card-chip">Event</span>
+        </header>
+        <div class="card-body">
+          ${e.description || ""}
+        </div>
+        <footer class="card-footer">
+          ${
+            e.register_link
+              ? `<a class="pill-button" href="${e.register_link}" target="_blank" rel="noopener">
+                    <span>📝</span>
+                    <span>Register</span>
+                 </a>`
+              : "<span class='muted'>No registration link</span>"
+          }
+          <span class="muted">${
+            e.location ? e.location : "PSG Tech · Campus event"
+          }</span>
+        </footer>
+      `;
+      eventsList.appendChild(el);
+    });
+  }
+
+  evBtn?.addEventListener("click", async () => {
+    if (!evName.value.trim() || !evDate.value.trim()) {
+      alert("Event name and date/time are required.");
+      return;
+    }
+    const { error } = await supabase.from("events").insert({
+      name: evName.value.trim(),
+      description: evDesc.value.trim(),
+      event_date: evDate.value,
+      register_link: evLink.value.trim() || null,
+    });
+    if (error) {
+      console.error(error);
+      alert("Could not create event.");
+      return;
+    }
+    evName.value = "";
+    evDate.value = "";
+    evDesc.value = "";
+    evLink.value = "";
+    refresh();
+  });
+
+  refresh();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (eventsList) initEvents();
+});
+

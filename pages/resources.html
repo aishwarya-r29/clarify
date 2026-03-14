@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Clarify · Resources</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  </head>
+  <body>
+    <div class="page-wrapper">
+      <header class="navbar">
+        <div class="navbar-left">
+          <div class="navbar-logo">
+            <span>C</span>
+          </div>
+          <div class="navbar-title">
+            <span class="navbar-title-main">Clarify</span>
+            <span class="navbar-title-sub">PSG Tech community hub</span>
+          </div>
+        </div>
+        <button id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">
+          ☰
+        </button>
+        <nav id="nav-links" class="nav-links">
+          <a data-nav-link href="/pages/home.html" class="nav-link">Home</a>
+          <a data-nav-link href="/pages/ask.html" class="nav-link">Ask</a>
+          <a data-nav-link href="/pages/resources.html" class="nav-link">Resources</a>
+          <a data-nav-link href="/pages/events.html" class="nav-link">Events</a>
+          <a data-nav-link href="/pages/profile.html" class="nav-link">Profile</a>
+          <button id="logout-btn" class="nav-link nav-logout" type="button">
+            Logout
+          </button>
+        </nav>
+      </header>
+
+      <main class="main-content">
+        <div class="page-heading">
+          <div>
+            <h1>Study resources</h1>
+            <p>Share notes, playlists, sheets, GitHub repos and anything that helped you.</p>
+          </div>
+          <div class="chip">
+            <span class="chip-label">Peer powered</span>
+            <span>Curated by PSG Tech students.</span>
+          </div>
+        </div>
+
+        <section class="card">
+          <h2 class="section-title">Share a resource</h2>
+          <div class="form-group">
+            <label class="form-label" for="res-title">Title</label>
+            <input id="res-title" type="text" placeholder="DSA notes, OS playlist, CN cheatsheet..." />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="res-desc">Description</label>
+            <textarea
+              id="res-desc"
+              placeholder="What is this? Which subject/semester? Why is it useful?"
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="res-link">Link</label>
+            <input id="res-link" type="url" placeholder="Drive / Notion / GitHub / YouTube URL" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="res-tag">Tag (optional)</label>
+            <input id="res-tag" type="text" placeholder="eg. DSA, 3rd sem, OS" />
+          </div>
+          <div style="display: flex; justify-content: flex-end;">
+            <button id="res-btn" type="button">Share resource</button>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">All resources</h2>
+          <div id="resources-list"></div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <div>
+          <span>Clarify</span> · PSG College of Technology · Built for students.
+        </div>
+      </footer>
+    </div>
+
+    <script type="module" src="/js/supabaseClient.js"></script>
+    <script type="module" src="/js/layout.js"></script>
+    <script type="module" src="/js/resources.js"></script>
+  </body>
+</html>
+
