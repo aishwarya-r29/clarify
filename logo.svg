@@ -1,0 +1,15 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f97316"/>
+      <stop offset="40%" stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="18" fill="#020617"/>
+  <rect x="6.5" y="6.5" width="51" height="51" rx="16" fill="url(#g1)" opacity="0.85"/>
+  <path d="M21 22C21 18.6863 23.6863 16 27 16H37C40.3137 16 43 18.6863 43 22V24.5C43 27.8137 40.3137 30.5 37 30.5H30L25 35.5V30.5H27C23.6863 30.5 21 27.8137 21 24.5V22Z" fill="#020617"/>
+  <path d="M27.5 37.5H37C40.5899 37.5 43.5 40.4101 43.5 44V44C43.5 47.5899 40.5899 50.5 37 50.5H30.5L25.5 55.5V50.5H27.5C24.4624 50.5 22 48.0376 22 45V45" stroke="#e5e7eb" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="22" y="30" fill="#e5e7eb" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="700">C</text>
+</svg>
+
