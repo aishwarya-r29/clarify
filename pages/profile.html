@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Clarify · Profile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  </head>
+  <body>
+    <div class="page-wrapper" id="profile-shell">
+      <header class="navbar">
+        <div class="navbar-left">
+          <div class="navbar-logo">
+            <span>C</span>
+          </div>
+          <div class="navbar-title">
+            <span class="navbar-title-main">Clarify</span>
+            <span class="navbar-title-sub">PSG Tech community hub</span>
+          </div>
+        </div>
+        <button id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">
+          ☰
+        </button>
+        <nav id="nav-links" class="nav-links">
+          <a data-nav-link href="/pages/home.html" class="nav-link">Home</a>
+          <a data-nav-link href="/pages/ask.html" class="nav-link">Ask</a>
+          <a data-nav-link href="/pages/resources.html" class="nav-link">Resources</a>
+          <a data-nav-link href="/pages/events.html" class="nav-link">Events</a>
+          <a data-nav-link href="/pages/profile.html" class="nav-link">Profile</a>
+          <button id="logout-btn" class="nav-link nav-logout" type="button">
+            Logout
+          </button>
+        </nav>
+      </header>
+
+      <main class="main-content">
+        <div class="page-heading">
+          <div>
+            <h1 id="profile-header-name">Your profile</h1>
+            <p id="profile-header-meta">Loading your details...</p>
+          </div>
+          <div class="chip">
+            <span class="chip-label">You</span>
+            <span>Update your info any time.</span>
+          </div>
+        </div>
+
+        <div class="two-column">
+          <section class="card">
+            <div style="display: flex; gap: 1rem; align-items: center;">
+              <div class="avatar" id="profile-avatar">C</div>
+              <div>
+                <div id="profile-bio" class="muted">
+                  Tell people who you are, what you’re into, and how you can help.
+                </div>
+              </div>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid rgba(55,65,81,.8); margin: 1rem 0;" />
+
+            <h2 class="section-title">Edit profile</h2>
+            <div class="form-group">
+              <label class="form-label" for="full-name">Full name</label>
+              <input id="full-name" type="text" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="department">Department</label>
+              <input id="department" type="text" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="year">Year</label>
+              <input id="year" type="text" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="bio">Bio</label>
+              <textarea id="bio"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="avatar">Profile picture (optional)</label>
+              <input id="avatar" type="file" accept="image/*" />
+            </div>
+            <div style="display: flex; justify-content: flex-end;">
+              <button id="save-profile" type="button">Save profile</button>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2 class="section-title">Your posts (read‑only)</h2>
+            <div id="my-posts" class="muted">
+              We can list your posts here once you’ve started using Clarify.
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <footer class="footer">
+        <div>
+          <span>Clarify</span> · PSG College of Technology · Built for students.
+        </div>
+      </footer>
+    </div>
+
+    <script type="module" src="/js/supabaseClient.js"></script>
+    <script type="module" src="/js/layout.js"></script>
+    <script type="module" src="/js/profile.js"></script>
+  </body>
+</html>
+
