@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Clarify · Ask</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  </head>
+  <body>
+    <div class="page-wrapper">
+      <header class="navbar">
+        <div class="navbar-left">
+          <div class="navbar-logo">
+            <span>C</span>
+          </div>
+          <div class="navbar-title">
+            <span class="navbar-title-main">Clarify</span>
+            <span class="navbar-title-sub">PSG Tech community hub</span>
+          </div>
+        </div>
+        <button id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">
+          ☰
+        </button>
+        <nav id="nav-links" class="nav-links">
+          <a data-nav-link href="/pages/home.html" class="nav-link">Home</a>
+          <a data-nav-link href="/pages/ask.html" class="nav-link">Ask</a>
+          <a data-nav-link href="/pages/resources.html" class="nav-link">Resources</a>
+          <a data-nav-link href="/pages/events.html" class="nav-link">Events</a>
+          <a data-nav-link href="/pages/profile.html" class="nav-link">Profile</a>
+          <button id="logout-btn" class="nav-link nav-logout" type="button">
+            Logout
+          </button>
+        </nav>
+      </header>
+
+      <main class="main-content">
+        <div class="page-heading">
+          <div>
+            <h1>Ask the community</h1>
+            <p>Get help from seniors, batchmates and peers across departments.</p>
+          </div>
+          <div class="chip">
+            <span class="chip-label">Tip</span>
+            <span>Be clear, share context, and keep it respectful.</span>
+          </div>
+        </div>
+
+        <section class="card">
+          <h2 class="section-title">Create a question</h2>
+          <div class="form-group">
+            <label class="form-label" for="ask-title">Title</label>
+            <input
+              id="ask-title"
+              type="text"
+              placeholder="eg. How to prepare for 3rd sem DSP internals?"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="ask-desc">Description</label>
+            <textarea
+              id="ask-desc"
+              placeholder="Explain your doubt, what you’ve tried, and where you’re stuck."
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="ask-tag">Tag (optional)</label>
+            <input
+              id="ask-tag"
+              type="text"
+              placeholder="eg. DSA, DSP, placements, projects, clubs"
+            />
+          </div>
+          <div style="display: flex; justify-content: flex-end;">
+            <button id="ask-btn" type="button">Post question</button>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <div>
+          <span>Clarify</span> · PSG College of Technology · Built for students.
+        </div>
+      </footer>
+    </div>
+
+    <script type="module" src="/js/supabaseClient.js"></script>
+    <script type="module" src="/js/layout.js"></script>
+    <script type="module">
+      import { supabase, requireAuth, ensureVerified } from "/js/supabaseClient.js";
+
+      const titleEl = document.getElementById("ask-title");
+      const descEl = document.getElementById("ask-desc");
+      const tagEl = document.getElementById("ask-tag");
+      const askBtn = document.getElementById("ask-btn");
+
+      async function initAsk() {
+        const session = await requireAuth();
+        if (!session) return;
+        if (!ensureVerified(session)) return;
+
+        const user = session.user;
+
+        askBtn.addEventListener("click", async () => {
+          if (!titleEl.value.trim() || !descEl.value.trim()) {
+            alert("Title and description are required.");
+            return;
+          }
+
+          const { error } = await supabase.from("posts").insert({
+            title: titleEl.value.trim(),
+            content: descEl.value.trim(),
+            tag: tagEl.value.trim() || null,
+            user_id: user.id,
+            author_email: user.email,
+          });
+
+          if (error) {
+            console.error(error);
+            alert("Could not post question.");
+            return;
+          }
+
+          titleEl.value = "";
+          descEl.value = "";
+          tagEl.value = "";
+          alert("Question posted. You can see it in Home feed.");
+        });
+      }
+
+      document.addEventListener("DOMContentLoaded", initAsk);
+    </script>
+  </body>
+</html>
+
