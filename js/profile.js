@@ -115,7 +115,7 @@ async function initProfile() {
 
       // If coming from first login, redirect to home
       if (window.location.pathname.endsWith("profile-setup.html")) {
-        window.location.href = "/pages/home.html";
+        window.location.href = "./home.html";
       } else {
         alert("Profile updated.");
         window.location.reload();

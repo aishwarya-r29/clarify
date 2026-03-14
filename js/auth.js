@@ -76,13 +76,15 @@ async function handleSubmit(e) {
 
   try {
     if (mode === "signup") {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: window.location.origin + "/pages/login.html",
-        },
-      });
+      const { error } = await supabase.auth.signUp(
+        {
+          email,
+          password,
+          options: {
+            emailRedirectTo: window.location.href,
+          },
+        }
+      );
       if (error) throw error;
       showAlert(
         "Account created. Check your inbox and verify your email before logging in.",
@@ -122,9 +124,9 @@ async function handleSubmit(e) {
       }
 
       if (!profile) {
-        window.location.href = "/pages/profile-setup.html";
+        window.location.href = "./profile-setup.html";
       } else {
-        window.location.href = "/pages/home.html";
+        window.location.href = "./home.html";
       }
     }
   } catch (err) {

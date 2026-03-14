@@ -23,6 +23,6 @@ const logoutBtn = document.getElementById("logout-btn");
 logoutBtn?.addEventListener("click", async () => {
   if (!supabase) return;
   await supabase.auth.signOut();
-  window.location.href = "/pages/login.html";
+  window.location.href = "./login.html";
 });
 

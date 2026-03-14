@@ -24,7 +24,7 @@ export async function requireAuth() {
     data: { session },
   } = await supabase.auth.getSession();
   if (!session) {
-    window.location.href = "/pages/login.html";
+    window.location.href = "./login.html";
     return null;
   }
   return session;
@@ -40,7 +40,7 @@ export function ensureVerified(session) {
       "Please verify your PSG Tech email address from the verification mail before accessing Clarify."
     );
     supabase.auth.signOut();
-    window.location.href = "/pages/login.html";
+    window.location.href = "./login.html";
     return false;
   }
   return true;
