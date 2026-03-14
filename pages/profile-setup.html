@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Clarify · Complete your profile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  </head>
+  <body>
+    <div class="page-wrapper">
+      <header class="navbar">
+        <div class="navbar-left">
+          <div class="navbar-logo">
+            <span>C</span>
+          </div>
+          <div class="navbar-title">
+            <span class="navbar-title-main">Clarify</span>
+            <span class="navbar-title-sub">PSG Tech community hub</span>
+          </div>
+        </div>
+      </header>
+
+      <main class="main-content">
+        <div class="page-heading">
+          <div>
+            <h1>Set up your profile</h1>
+            <p>This is shown on posts, replies and your profile page.</p>
+          </div>
+        </div>
+
+        <section class="card">
+          <div class="two-column">
+            <div>
+              <div class="form-group">
+                <label class="form-label" for="full-name">Full name</label>
+                <input id="full-name" type="text" placeholder="Your name as students know it" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="department">Department</label>
+                <input id="department" type="text" placeholder="CSE, ECE, EEE, IT, ..." />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="year">Year</label>
+                <input id="year" type="text" placeholder="II B.E CSE, III B.Tech IT, ..." />
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group">
+                <label class="form-label" for="bio">Short bio</label>
+                <textarea
+                  id="bio"
+                  placeholder="What are you into? Clubs, interests, current goals..."
+                ></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="avatar">Profile picture (optional)</label>
+                <input id="avatar" type="file" accept="image/*" />
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 1rem; display: flex; justify-content: flex-end; gap: 0.6rem;">
+            <button id="save-profile" type="button">Save profile</button>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <div>
+          <span>Clarify</span> · PSG College of Technology · Built for students.
+        </div>
+      </footer>
+    </div>
+
+    <script type="module" src="/js/supabaseClient.js"></script>
+    <script type="module" src="/js/profile.js"></script>
+  </body>
+</html>
+

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Clarify · Home</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  </head>
+  <body>
+    <div class="page-wrapper">
+      <header class="navbar">
+        <div class="navbar-left">
+          <div class="navbar-logo">
+            <span>C</span>
+          </div>
+          <div class="navbar-title">
+            <span class="navbar-title-main">Clarify</span>
+            <span class="navbar-title-sub">PSG Tech community hub</span>
+          </div>
+        </div>
+        <button id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">
+          ☰
+        </button>
+        <nav id="nav-links" class="nav-links">
+          <a data-nav-link href="/pages/home.html" class="nav-link">Home</a>
+          <a data-nav-link href="/pages/ask.html" class="nav-link">Ask</a>
+          <a data-nav-link href="/pages/resources.html" class="nav-link">Resources</a>
+          <a data-nav-link href="/pages/events.html" class="nav-link">Events</a>
+          <a data-nav-link href="/pages/profile.html" class="nav-link">Profile</a>
+          <button id="logout-btn" class="nav-link nav-logout" type="button">
+            Logout
+          </button>
+        </nav>
+      </header>
+
+      <main class="main-content">
+        <div class="page-heading">
+          <div>
+            <h1>Community feed</h1>
+            <p>What your batchmates and seniors are asking, sharing, and discussing.</p>
+          </div>
+          <div class="chip">
+            <span class="chip-label">Live</span>
+            <span>New posts appear at the top.</span>
+          </div>
+        </div>
+
+        <section class="section">
+          <div class="card">
+            <div class="form-group">
+              <label class="form-label" for="composer-text">Share something with Clarify</label>
+              <textarea
+                id="composer-text"
+                placeholder="Ask a doubt, share a learning, or start a discussion..."
+              ></textarea>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;">
+              <input
+                id="search-input"
+                type="text"
+                placeholder="Search posts by topic, keyword or subject..."
+                style="max-width: 320px;"
+              />
+              <button id="post-btn" type="button">Post</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Latest from campus</h2>
+          <div id="feed"></div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <div>
+          <span>Clarify</span> · PSG College of Technology · Built for students.
+        </div>
+      </footer>
+    </div>
+
+    <script type="module" src="/js/supabaseClient.js"></script>
+    <script type="module" src="/js/layout.js"></script>
+    <script type="module" src="/js/posts.js"></script>
+  </body>
+</html>
+
