@@ -6,31 +6,21 @@ const evDate = document.getElementById("ev-date");
 const evDesc = document.getElementById("ev-desc");
 const evLink = document.getElementById("ev-link");
 const evBtn = document.getElementById("ev-btn");
+const evSearch = document.getElementById("ev-search");
 
-async function initEvents() {
-  const session = await requireAuth();
-  if (!session) return;
-  if (!ensureVerified(session)) return;
+let allEvents = [];
 
-  async function refresh() {
-    const { data, error } = await supabase
-      .from("events")
-      .select("*")
-      .order("event_date", { ascending: true });
-    if (error) {
-      console.error(error);
-      return;
-    }
-    eventsList.innerHTML = "";
-    if (!data || data.length === 0) {
-      eventsList.innerHTML =
-        '<div class="empty-state">No events yet. Share upcoming hackathons, workshops, or club activities.</div>';
-      return;
-    }
-    data.forEach((e) => {
-      const el = document.createElement("article");
-      el.className = "card";
-      el.innerHTML = `
+function renderEvents(items) {
+  eventsList.innerHTML = "";
+  if (!items || items.length === 0) {
+    eventsList.innerHTML =
+      '<div class="empty-state">No events yet. Share upcoming hackathons, workshops, or club activities.</div>';
+    return;
+  }
+  items.forEach((e) => {
+    const el = document.createElement("article");
+    el.className = "card";
+    el.innerHTML = `
         <header class="card-header">
           <div class="user-chip">
             <div class="avatar">E</div>
@@ -41,7 +31,7 @@ async function initEvents() {
               </span>
             </div>
           </div>
-          <span class="card-chip">Event</span>
+          <span class="card-chip">${e.department || "Event"}</span>
         </header>
         <div class="card-body">
           ${e.description || ""}
@@ -60,8 +50,26 @@ async function initEvents() {
           }</span>
         </footer>
       `;
-      eventsList.appendChild(el);
-    });
+    eventsList.appendChild(el);
+  });
+}
+
+async function initEvents() {
+  const session = await requireAuth();
+  if (!session) return;
+  if (!ensureVerified(session)) return;
+
+  async function refresh() {
+    const { data, error } = await supabase
+      .from("events")
+      .select("*")
+      .order("event_date", { ascending: true });
+    if (error) {
+      console.error(error);
+      return;
+    }
+    allEvents = data || [];
+    renderEvents(allEvents);
   }
 
   evBtn?.addEventListener("click", async () => {
@@ -85,6 +93,22 @@ async function initEvents() {
     evDesc.value = "";
     evLink.value = "";
     refresh();
+  });
+
+  evSearch?.addEventListener("input", () => {
+    const q = evSearch.value.trim().toLowerCase();
+    if (!q) {
+      renderEvents(allEvents);
+      return;
+    }
+    const filtered = allEvents.filter((e) => {
+      const haystack = [e.name, e.description, e.department]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+    renderEvents(filtered);
   });
 
   refresh();

@@ -6,33 +6,22 @@ const resDesc = document.getElementById("res-desc");
 const resLink = document.getElementById("res-link");
 const resTag = document.getElementById("res-tag");
 const resBtn = document.getElementById("res-btn");
+const resSearch = document.getElementById("res-search");
 
-async function initResources() {
-  const session = await requireAuth();
-  if (!session) return;
-  if (!ensureVerified(session)) return;
+let allResources = [];
+let currentProfile = null;
 
-  const user = session.user;
-
-  async function refresh() {
-    const { data, error } = await supabase
-      .from("resources")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) {
-      console.error(error);
-      return;
-    }
-    resourcesList.innerHTML = "";
-    if (!data || data.length === 0) {
-      resourcesList.innerHTML =
-        '<div class="empty-state">No resources yet. Share notes, playlists, sheets, or repos that helped you.</div>';
-      return;
-    }
-    data.forEach((r) => {
-      const el = document.createElement("article");
-      el.className = "card";
-      el.innerHTML = `
+function renderResources(items) {
+  resourcesList.innerHTML = "";
+  if (!items || items.length === 0) {
+    resourcesList.innerHTML =
+      '<div class="empty-state">No resources yet. Share notes, playlists, sheets, or repos that helped you.</div>';
+    return;
+  }
+  items.forEach((r) => {
+    const el = document.createElement("article");
+    el.className = "card";
+    el.innerHTML = `
         <header class="card-header">
           <div class="user-chip">
             <div class="avatar">${(r.uploader_name || r.uploader_email || "C")
@@ -41,7 +30,9 @@ async function initResources() {
             <div class="user-meta">
               <span class="user-meta-name">${r.title}</span>
               <span class="user-meta-sub">
-                Uploaded by ${r.uploader_name || r.uploader_email}
+                ${r.uploader_name || r.uploader_email}${
+      r.department ? " · " + r.department : ""
+    }
               </span>
             </div>
           </div>
@@ -62,8 +53,35 @@ async function initResources() {
           <span class="muted">${new Date(r.created_at).toLocaleDateString()}</span>
         </footer>
       `;
-      resourcesList.appendChild(el);
-    });
+    resourcesList.appendChild(el);
+  });
+}
+
+async function initResources() {
+  const session = await requireAuth();
+  if (!session) return;
+  if (!ensureVerified(session)) return;
+
+  const user = session.user;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  currentProfile = profile || null;
+
+  async function refresh() {
+    const { data, error } = await supabase
+      .from("resources")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error(error);
+      return;
+    }
+    allResources = data || [];
+    renderResources(allResources);
   }
 
   resBtn?.addEventListener("click", async () => {
@@ -78,6 +96,8 @@ async function initResources() {
       tag: resTag.value.trim() || null,
       uploader_id: user.id,
       uploader_email: user.email,
+      uploader_name: currentProfile?.full_name || null,
+      department: currentProfile?.department || null,
     });
     if (error) {
       console.error(error);
@@ -89,6 +109,28 @@ async function initResources() {
     resLink.value = "";
     resTag.value = "";
     refresh();
+  });
+
+  resSearch?.addEventListener("input", () => {
+    const q = resSearch.value.trim().toLowerCase();
+    if (!q) {
+      renderResources(allResources);
+      return;
+    }
+    const filtered = allResources.filter((r) => {
+      const haystack = [
+        r.title,
+        r.description,
+        r.tag,
+        r.department,
+        r.uploader_name,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+    renderResources(filtered);
   });
 
   refresh();

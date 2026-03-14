@@ -76,6 +76,20 @@
             <button id="ask-btn" type="button">Post question</button>
           </div>
         </section>
+
+        <section class="section">
+          <div class="page-heading" style="margin-bottom: 1rem;">
+            <h2 class="section-title">Search existing questions</h2>
+            <div style="max-width: 260px; width: 100%;">
+              <input
+                id="ask-search"
+                type="text"
+                placeholder="Search by tag, subject or department..."
+              />
+            </div>
+          </div>
+          <div id="ask-results"></div>
+        </section>
       </main>
 
       <footer class="footer">
@@ -94,6 +108,8 @@
       const descEl = document.getElementById("ask-desc");
       const tagEl = document.getElementById("ask-tag");
       const askBtn = document.getElementById("ask-btn");
+      const askSearch = document.getElementById("ask-search");
+      const askResults = document.getElementById("ask-results");
 
       async function initAsk() {
         const session = await requireAuth();
@@ -127,6 +143,69 @@
           tagEl.value = "";
           alert("Question posted. You can see it in Home feed.");
         });
+
+        async function refreshSearch() {
+          const q = askSearch.value.trim();
+          if (!q) {
+            askResults.innerHTML =
+              '<div class="empty-state">Start typing to find similar questions.</div>';
+            return;
+          }
+          const term = `%${q}%`;
+          const { data, error } = await supabase
+            .from("posts")
+            .select("id,title,content,tag,department,created_at")
+            .or(
+              `title.ilike.${term},content.ilike.${term},tag.ilike.${term},department.ilike.${term}`
+            )
+            .order("created_at", { ascending: false })
+            .limit(10);
+          if (error) {
+            console.error(error);
+            return;
+          }
+          if (!data || data.length === 0) {
+            askResults.innerHTML =
+              '<div class="empty-state">No matching questions yet. Go ahead and ask!</div>';
+            return;
+          }
+          askResults.innerHTML = "";
+          data.forEach((p) => {
+            const el = document.createElement("article");
+            el.className = "card";
+            el.innerHTML = `
+              <header class="card-header">
+                <div class="user-meta">
+                  <span class="user-meta-name">${p.title || "Question"}</span>
+                  <span class="user-meta-sub">
+                    ${p.department || ""} · ${new Date(p.created_at).toLocaleString()}
+                  </span>
+                </div>
+                ${
+                  p.tag
+                    ? `<span class="card-chip">#${p.tag}</span>`
+                    : ""
+                }
+              </header>
+              <div class="card-body">
+                ${
+                  p.content
+                    ? p.content.length > 200
+                      ? p.content.substring(0, 200) + "..."
+                      : p.content
+                    : ""
+                }
+              </div>
+            `;
+            askResults.appendChild(el);
+          });
+        }
+
+        askSearch?.addEventListener("input", () => {
+          refreshSearch();
+        });
+
+        refreshSearch();
       }
 
       document.addEventListener("DOMContentLoaded", initAsk);

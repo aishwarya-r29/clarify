@@ -19,10 +19,30 @@ function formatTime(iso) {
   return `${days}d ago`;
 }
 
-function createPostCard(post, userId) {
+function createPostCard(post, userId, refreshFeed) {
   const wrapper = document.createElement("article");
   wrapper.className = "card";
   const initials = (post.author_name || post.author_email || "C")[0].toUpperCase();
+  const replies = post.post_replies || [];
+
+  const repliesHtml =
+    replies.length === 0
+      ? '<div class="muted">No replies yet. Start the conversation.</div>'
+      : replies
+          .map(
+            (r) => `
+        <div class="reply-item">
+          <div class="reply-meta">
+            <span class="reply-author">${r.author_name || r.author_email}</span>
+            <span class="reply-sub">${r.department || ""}${r.year ? " · " + r.year : ""}</span>
+          </div>
+          <div class="reply-text">${r.content.replace(/\n/g, "<br>")}</div>
+          <div class="reply-time">${formatTime(r.created_at)}</div>
+        </div>
+      `
+          )
+          .join("");
+
   wrapper.innerHTML = `
     <header class="card-header">
       <div class="user-chip">
@@ -43,6 +63,7 @@ function createPostCard(post, userId) {
       }
     </header>
     <div class="card-body">
+      ${post.title ? `<strong>${post.title}</strong><br/>` : ""}
       ${post.content ? post.content.replace(/\n/g, "<br>") : ""}
     </div>
     <footer class="card-footer">
@@ -54,7 +75,7 @@ function createPostCard(post, userId) {
         </button>
         <button class="pill-button" data-comment>
           <span>💬</span>
-          <span>${post.comments_count || 0}</span>
+          <span>${post.comments_count || replies.length || 0}</span>
         </button>
         ${
           post.user_id === userId
@@ -65,23 +86,62 @@ function createPostCard(post, userId) {
         }
       </div>
     </footer>
+    <div class="replies">
+      <div class="replies-list">
+        ${repliesHtml}
+      </div>
+      <div class="reply-composer">
+        <input type="text" placeholder="Reply to this post..." data-reply-input />
+        <button type="button" class="pill-button" data-reply-submit>
+          <span>➤</span><span>Reply</span>
+        </button>
+      </div>
+    </div>
   `;
 
   const likeBtn = wrapper.querySelector("[data-like]");
   const deleteBtn = wrapper.querySelector("[data-delete]");
+  const replyInput = wrapper.querySelector("[data-reply-input]");
+  const replySubmit = wrapper.querySelector("[data-reply-submit]");
 
   likeBtn?.addEventListener("click", async () => {
-    // Minimal optimistic like: increment counter column
-    const { error } = await supabase.rpc("increment_post_likes", {
-      post_id_input: post.id,
-    });
-    if (error) console.error(error);
+    const { error } = await supabase
+      .from("posts")
+      .update({ likes_count: (post.likes_count || 0) + 1 })
+      .eq("id", post.id);
+    if (error) {
+      console.error(error);
+      return;
+    }
+    refreshFeed();
   });
 
   deleteBtn?.addEventListener("click", async () => {
     if (!confirm("Delete this post?")) return;
     const { error } = await supabase.from("posts").delete().eq("id", post.id);
     if (error) console.error(error);
+    else refreshFeed();
+  });
+
+  replySubmit?.addEventListener("click", async () => {
+    const value = replyInput.value.trim();
+    if (!value) return;
+    const { error } = await supabase.from("post_replies").insert({
+      post_id: post.id,
+      user_id: userId,
+      content: value,
+      author_email: currentProfile?.email || post.author_email,
+      author_name: currentProfile?.full_name || null,
+      department: currentProfile?.department || null,
+      year: currentProfile?.year || null,
+    });
+    if (error) {
+      console.error(error);
+      alert("Could not add reply.");
+      return;
+    }
+    replyInput.value = "";
+    refreshFeed();
   });
 
   return wrapper;
@@ -100,17 +160,22 @@ async function loadHomeFeed() {
     .select("*")
     .eq("user_id", user.id)
     .maybeSingle();
-  currentProfile = profile;
+  currentProfile = profile
+    ? { ...profile, email: user.email }
+    : { email: user.email };
 
   async function refreshFeed() {
     let query = supabase
       .from("posts")
-      .select("*")
+      .select("*, post_replies(*)")
       .order("created_at", { ascending: false });
 
     const q = searchInput?.value.trim();
     if (q) {
-      query = query.ilike("content", `%${q}%`);
+      const term = `%${q}%`;
+      query = query.or(
+        `content.ilike.${term},title.ilike.${term},tag.ilike.${term},department.ilike.${term}`
+      );
     }
 
     const { data: posts, error } = await query;
@@ -127,7 +192,7 @@ async function loadHomeFeed() {
     }
 
     posts.forEach((p) => {
-      feedContainer.appendChild(createPostCard(p, user.id));
+      feedContainer.appendChild(createPostCard(p, user.id, refreshFeed));
     });
   }
 
@@ -161,4 +226,5 @@ async function loadHomeFeed() {
 document.addEventListener("DOMContentLoaded", () => {
   if (feedContainer) loadHomeFeed();
 });
+
 
