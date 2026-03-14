@@ -46,13 +46,50 @@ function renderResources(items) {
           ${r.description || ""}
         </div>
         <footer class="card-footer">
-          <a class="pill-button" href="${r.link}" target="_blank" rel="noopener">
-            <span>↗</span>
-            <span>Open resource</span>
-          </a>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <a class="pill-button" href="${r.link}" target="_blank" rel="noopener">
+              <span>↗</span>
+              <span>Open resource</span>
+            </a>
+            <button class="pill-button" data-upvote style="background: rgba(34, 197, 94, 0.2); border-color: rgba(34, 197, 94, 0.5);">
+              <span>👍</span>
+              <span>${r.upvotes_count || 0}</span>
+            </button>
+            ${
+              r.uploader_id === currentProfile?.user_id
+                ? `<button class="pill-button" data-delete style="background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.5);">
+                     <span>✕</span><span>Delete</span>
+                   </button>`
+                : ""
+            }
+          </div>
           <span class="muted">${new Date(r.created_at).toLocaleDateString()}</span>
         </footer>
       `;
+    
+    // Add event listeners
+    const upvoteBtn = el.querySelector("[data-upvote]");
+    const deleteBtn = el.querySelector("[data-delete]");
+    
+    upvoteBtn?.addEventListener("click", async () => {
+      const { error } = await supabase
+        .from("resources")
+        .update({ upvotes_count: (r.upvotes_count || 0) + 1 })
+        .eq("id", r.id);
+      if (error) {
+        console.error(error);
+        return;
+      }
+      refresh();
+    });
+    
+    deleteBtn?.addEventListener("click", async () => {
+      if (!confirm("Delete this resource?")) return;
+      const { error } = await supabase.from("resources").delete().eq("id", r.id);
+      if (error) console.error(error);
+      else refresh();
+    });
+    
     resourcesList.appendChild(el);
   });
 }
@@ -69,7 +106,9 @@ async function initResources() {
     .select("*")
     .eq("user_id", user.id)
     .maybeSingle();
-  currentProfile = profile || null;
+  currentProfile = profile 
+    ? { ...profile, user_id: user.id, email: user.email }
+    : { user_id: user.id, email: user.email };
 
   async function refresh() {
     const { data, error } = await supabase

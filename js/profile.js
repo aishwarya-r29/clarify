@@ -11,6 +11,69 @@ const profileHeaderName = document.getElementById("profile-header-name");
 const profileHeaderMeta = document.getElementById("profile-header-meta");
 const profileAvatar = document.getElementById("profile-avatar");
 const profileBio = document.getElementById("profile-bio");
+const myPostsContainer = document.getElementById("my-posts");
+
+function formatTime(iso) {
+  if (!iso) return "";
+  const created = new Date(iso).getTime();
+  const diff = Date.now() - created;
+  const mins = Math.floor(diff / 60000);
+  const hrs = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  if (mins < 60) return `${mins}m ago`;
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${days}d ago`;
+}
+
+async function loadUserPosts(userId) {
+  if (!myPostsContainer) return;
+  
+  myPostsContainer.innerHTML = '<div class="muted">Loading your posts...</div>';
+  
+  const { data: posts, error } = await supabase
+    .from("posts")
+    .select("*, post_replies(*)")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(10);
+    
+  if (error) {
+    console.error(error);
+    myPostsContainer.innerHTML = '<div class="muted">Error loading posts.</div>';
+    return;
+  }
+  
+  if (!posts || posts.length === 0) {
+    myPostsContainer.innerHTML = '<div class="muted">You haven\'t posted anything yet. Start sharing on the home page!</div>';
+    return;
+  }
+  
+  myPostsContainer.innerHTML = '';
+  posts.forEach(post => {
+    const postEl = document.createElement('div');
+    postEl.className = 'card';
+    postEl.style.marginBottom = '0.75rem';
+    
+    const replies = post.post_replies || [];
+    postEl.innerHTML = `
+      <header class="card-header">
+        <div class="user-meta">
+          <span class="user-meta-name">${post.title || 'Post'}</span>
+          <span class="user-meta-sub">${formatTime(post.created_at)} · ${replies.length} replies</span>
+        </div>
+        ${post.tag ? `<span class="card-chip">#${post.tag}</span>` : ''}
+      </header>
+      <div class="card-body">
+        ${post.content ? post.content.substring(0, 150) + (post.content.length > 150 ? '...' : '') : ''}
+      </div>
+      <div class="card-footer">
+        <span class="muted">${post.likes_count || 0} likes · ${replies.length} replies</span>
+      </div>
+    `;
+    
+    myPostsContainer.appendChild(postEl);
+  });
+}
 
 async function initProfile() {
   const session = await requireAuth();
@@ -96,6 +159,7 @@ async function initProfile() {
 
       const upsertPayload = {
         user_id: user.id,
+        email: user.email,
         full_name: fullName,
         department,
         year,
@@ -103,13 +167,34 @@ async function initProfile() {
         avatar_url: avatarUrl,
       };
 
-      const { error: upsertError } = await supabase
+      // First try to insert, if it fails due to constraint, then update
+      const { data: existingProfile } = await supabase
         .from("profiles")
-        .upsert(upsertPayload, { onConflict: "user_id" });
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+        
+      let result;
+      if (existingProfile) {
+        // Update existing profile
+        result = await supabase
+          .from("profiles")
+          .update(upsertPayload)
+          .eq("user_id", user.id);
+      } else {
+        // Insert new profile
+        result = await supabase
+          .from("profiles")
+          .insert(upsertPayload);
+      }
+      
+      const { error: upsertError } = result;
 
       if (upsertError) {
-        console.error(upsertError);
-        alert("Could not save profile. Try again.");
+        console.error("Profile operation error:", upsertError);
+        console.error("Error details:", JSON.stringify(upsertError, null, 2));
+        console.error("Payload:", JSON.stringify(upsertPayload, null, 2));
+        alert("Could not save profile. Error: " + (upsertError.message || "Unknown error") + "\nCheck console for details.");
         return;
       }
 
@@ -125,6 +210,9 @@ async function initProfile() {
       saveBtn.textContent = "Save profile";
     }
   });
+  
+  // Load user posts
+  await loadUserPosts(user.id);
 }
 
 document.addEventListener("DOMContentLoaded", initProfile);

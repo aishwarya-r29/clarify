@@ -1,10 +1,13 @@
 import { supabase, requireAuth, ensureVerified } from "./supabaseClient.js";
 
-const feedContainer = document.getElementById("feed");
-const composerText = document.getElementById("composer-text");
-const postBtn = document.getElementById("post-btn");
-const searchInput = document.getElementById("search-input");
+const titleEl = document.getElementById("ask-title");
+const descEl = document.getElementById("ask-desc");
+const tagEl = document.getElementById("ask-tag");
+const askBtn = document.getElementById("ask-btn");
+const askSearch = document.getElementById("ask-search");
+const askResults = document.getElementById("ask-results");
 
+let allQuestions = [];
 let currentProfile = null;
 
 function formatTime(iso) {
@@ -19,15 +22,15 @@ function formatTime(iso) {
   return `${days}d ago`;
 }
 
-function createPostCard(post, userId, refreshFeed) {
+function createQuestionCard(question, userId, refreshQuestions) {
   const wrapper = document.createElement("article");
   wrapper.className = "card";
-  const initials = (post.author_name || post.author_email || "C")[0].toUpperCase();
-  const replies = post.post_replies || [];
+  const initials = (question.author_name || question.author_email || "C")[0].toUpperCase();
+  const replies = question.post_replies || [];
 
   const repliesHtml =
     replies.length === 0
-      ? '<div class="muted">No replies yet. Start the conversation.</div>'
+      ? '<div class="muted">No replies yet. Be the first to help!</div>'
       : replies
           .map(
             (r) => `
@@ -48,38 +51,38 @@ function createPostCard(post, userId, refreshFeed) {
     <header class="card-header">
       <div class="user-chip">
         <div class="avatar">
-          ${post.author_avatar_url ? `<img src="${post.author_avatar_url}" alt="">` : initials}
+          ${question.author_avatar_url ? `<img src="${question.author_avatar_url}" alt="">` : initials}
         </div>
         <div class="user-meta">
-          <span class="user-meta-name">${post.author_name || post.author_email}</span>
+          <span class="user-meta-name">${question.author_name || question.author_email}</span>
           <span class="user-meta-sub">
-            ${post.department || "PSG Tech"}${post.year ? " · " + post.year : ""}
+            ${question.department || "PSG Tech"}${question.year ? " · " + question.year : ""}
           </span>
         </div>
       </div>
       ${
-        post.tag
-          ? `<span class="card-chip">#${post.tag}</span>`
+        question.tag
+          ? `<span class="card-chip">#${question.tag}</span>`
           : ""
       }
     </header>
     <div class="card-body">
-      ${post.title ? `<strong>${post.title}</strong><br/>` : ""}
-      ${post.content ? post.content.replace(/\n/g, "<br>") : ""}
+      <strong>${question.title}</strong><br/>
+      ${question.content ? question.content.replace(/\n/g, "<br>") : ""}
     </div>
     <footer class="card-footer">
-      <span class="muted">${formatTime(post.created_at)}</span>
+      <span class="muted">${formatTime(question.created_at)}</span>
       <div class="card-actions">
-        <button class="pill-button" data-like>
-          <span>♥</span>
-          <span>${post.likes_count || 0}</span>
+        <button class="pill-button" data-upvote>
+          <span>👍</span>
+          <span>${question.upvotes_count || 0}</span>
         </button>
         <button class="pill-button" data-comment>
           <span>💬</span>
-          <span>${post.comments_count || replies.length || 0}</span>
+          <span>${replies.length}</span>
         </button>
         ${
-          post.user_id === userId
+          question.user_id === userId
             ? `<button class="pill-button" data-delete>
                  <span>✕</span><span>Delete</span>
                </button>`
@@ -92,7 +95,7 @@ function createPostCard(post, userId, refreshFeed) {
         ${repliesHtml}
       </div>
       <div class="reply-composer">
-        <input type="text" placeholder="Reply to this post..." data-reply-input />
+        <input type="text" placeholder="Reply to this question..." data-reply-input />
         <button type="button" class="pill-button" data-reply-submit>
           <span>➤</span><span>Reply</span>
         </button>
@@ -100,39 +103,39 @@ function createPostCard(post, userId, refreshFeed) {
     </div>
   `;
 
-  const likeBtn = wrapper.querySelector("[data-like]");
+  const upvoteBtn = wrapper.querySelector("[data-upvote]");
   const deleteBtn = wrapper.querySelector("[data-delete]");
   const replyInput = wrapper.querySelector("[data-reply-input]");
   const replySubmit = wrapper.querySelector("[data-reply-submit]");
   const deleteReplyBtns = wrapper.querySelectorAll("[data-delete-reply]");
 
-  likeBtn?.addEventListener("click", async () => {
+  upvoteBtn?.addEventListener("click", async () => {
     const { error } = await supabase
       .from("posts")
-      .update({ likes_count: (post.likes_count || 0) + 1 })
-      .eq("id", post.id);
+      .update({ upvotes_count: (question.upvotes_count || 0) + 1 })
+      .eq("id", question.id);
     if (error) {
       console.error(error);
       return;
     }
-    refreshFeed();
+    refreshQuestions();
   });
 
   deleteBtn?.addEventListener("click", async () => {
-    if (!confirm("Delete this post?")) return;
-    const { error } = await supabase.from("posts").delete().eq("id", post.id);
+    if (!confirm("Delete this question?")) return;
+    const { error } = await supabase.from("posts").delete().eq("id", question.id);
     if (error) console.error(error);
-    else refreshFeed();
+    else refreshQuestions();
   });
 
   replySubmit?.addEventListener("click", async () => {
     const value = replyInput.value.trim();
     if (!value) return;
     const { error } = await supabase.from("post_replies").insert({
-      post_id: post.id,
+      post_id: question.id,
       user_id: userId,
       content: value,
-      author_email: currentProfile?.email || post.author_email,
+      author_email: currentProfile?.email || question.author_email,
       author_name: currentProfile?.full_name || null,
       department: currentProfile?.department || null,
       year: currentProfile?.year || null,
@@ -143,7 +146,7 @@ function createPostCard(post, userId, refreshFeed) {
       return;
     }
     replyInput.value = "";
-    refreshFeed();
+    refreshQuestions();
   });
 
   deleteReplyBtns.forEach(btn => {
@@ -153,14 +156,47 @@ function createPostCard(post, userId, refreshFeed) {
       if (!confirm("Delete this reply?")) return;
       const { error } = await supabase.from("post_replies").delete().eq("id", replyId);
       if (error) console.error(error);
-      else refreshFeed();
+      else refreshQuestions();
     });
   });
 
   return wrapper;
 }
 
-async function loadHomeFeed() {
+async function refreshQuestions() {
+  const q = askSearch.value.trim();
+  let query = supabase
+    .from("posts")
+    .select("*, post_replies(*)")
+    .eq("type", "question")
+    .order("created_at", { ascending: false });
+
+  if (q) {
+    const term = `%${q}%`;
+    query = query.or(
+      `title.ilike.${term},content.ilike.${term},tag.ilike.${term},department.ilike.${term}`
+    );
+  }
+
+  const { data: questions, error } = await query.limit(20);
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  askResults.innerHTML = "";
+  if (!questions || questions.length === 0) {
+    askResults.innerHTML =
+      '<div class="empty-state">' + (q ? 'No matching questions found.' : 'No questions yet. Be the first to ask!') + '</div>';
+    return;
+  }
+
+  questions.forEach((question) => {
+    askResults.appendChild(createQuestionCard(question, currentProfile?.user_id || null, refreshQuestions));
+  });
+}
+
+async function initAsk() {
   const session = await requireAuth();
   if (!session) return;
   if (!ensureVerified(session)) return;
@@ -174,72 +210,45 @@ async function loadHomeFeed() {
     .eq("user_id", user.id)
     .maybeSingle();
   currentProfile = profile
-    ? { ...profile, email: user.email }
-    : { email: user.email };
+    ? { ...profile, user_id: user.id, email: user.email }
+    : { user_id: user.id, email: user.email };
 
-  async function refreshFeed() {
-    let query = supabase
-      .from("posts")
-      .select("*, post_replies(*)")
-      .or("type.is.null,type.neq.question")
-      .order("created_at", { ascending: false });
-
-    const q = searchInput?.value.trim();
-    if (q) {
-      const term = `%${q}%`;
-      query = query.or(
-        `content.ilike.${term},title.ilike.${term},tag.ilike.${term},department.ilike.${term}`
-      );
-    }
-
-    const { data: posts, error } = await query;
-    if (error) {
-      console.error(error);
+  askBtn.addEventListener("click", async () => {
+    if (!titleEl.value.trim() || !descEl.value.trim()) {
+      alert("Title and description are required.");
       return;
     }
 
-    feedContainer.innerHTML = "";
-    if (!posts || posts.length === 0) {
-      feedContainer.innerHTML =
-        '<div class="empty-state">No posts yet. Be the first to share something!</div>';
-      return;
-    }
-
-    posts.forEach((p) => {
-      feedContainer.appendChild(createPostCard(p, user.id, refreshFeed));
-    });
-  }
-
-  await refreshFeed();
-
-  searchInput?.addEventListener("input", () => {
-    refreshFeed();
-  });
-
-  postBtn?.addEventListener("click", async () => {
-    if (!composerText.value.trim()) return;
-    const content = composerText.value.trim();
     const { error } = await supabase.from("posts").insert({
-      content,
-      type: "general",
+      title: titleEl.value.trim(),
+      content: descEl.value.trim(),
+      tag: tagEl.value.trim() || null,
+      type: "question",
       user_id: user.id,
       author_email: user.email,
       author_name: currentProfile?.full_name || null,
       department: currentProfile?.department || null,
       year: currentProfile?.year || null,
     });
+
     if (error) {
       console.error(error);
-      alert("Could not post. Try again.");
+      alert("Could not post question.");
       return;
     }
-    composerText.value = "";
-    await refreshFeed();
+
+    titleEl.value = "";
+    descEl.value = "";
+    tagEl.value = "";
+    alert("Question posted successfully!");
+    refreshQuestions();
   });
+
+  askSearch?.addEventListener("input", () => {
+    refreshQuestions();
+  });
+
+  await refreshQuestions();
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  if (feedContainer) loadHomeFeed();
-});
-
-
+document.addEventListener("DOMContentLoaded", initAsk);

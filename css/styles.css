@@ -16,8 +16,10 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
     "Segoe UI", sans-serif;
   background: radial-gradient(circle at top left, #ff4ecd 0, #7c3aed 35%, #020617 75%);
+  background-attachment: fixed;
   color: #f9fafb;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
 
 a {
@@ -472,6 +474,13 @@ textarea {
   border: 1px solid rgba(148, 163, 184, 0.5);
   background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
   padding: 1.1rem 1.25rem;
+  margin-bottom: 1rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
 }
 
 .card + .card {
@@ -484,6 +493,7 @@ textarea {
   justify-content: space-between;
   gap: 0.75rem;
   margin-bottom: 0.55rem;
+  flex-wrap: wrap;
 }
 
 .user-chip {
@@ -550,11 +560,14 @@ textarea {
   justify-content: space-between;
   font-size: 0.78rem;
   color: #9ca3af;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .card-actions {
   display: flex;
   gap: 0.4rem;
+  flex-wrap: wrap;
 }
 
 .pill-button {
@@ -637,6 +650,37 @@ textarea {
 
   .main-content {
     padding-top: 5.5rem;
+  }
+  
+  .page-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .card {
+    padding: 1rem;
+  }
+  
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .card-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .card-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .two-column {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
