@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Clarify · Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  </head>
+  <body>
+    <div class="auth-shell">
+      <div class="auth-card glass">
+        <section class="auth-hero">
+          <div class="auth-hero-orbit"></div>
+          <div class="auth-hero-badge">
+            <span>PSG Tech Only</span>
+            <span>·</span>
+            <span>Verified college email</span>
+          </div>
+          <h1>Clarify – your campus-only community space.</h1>
+          <p>
+            Ask doubts, share resources, discover events and connect with peers across
+            departments in a safe, college‑only discussion space.
+          </p>
+          <div class="auth-meta-row">
+            <span class="auth-pill">Moderated & student‑first</span>
+            <span class="auth-pill">Built for PSG Tech</span>
+          </div>
+        </section>
+
+        <section class="auth-form">
+          <div class="auth-tabs">
+            <button id="toggle-login" class="auth-tab active" type="button">
+              Login
+            </button>
+            <button id="toggle-signup" class="auth-tab" type="button">
+              Sign up
+            </button>
+          </div>
+
+          <h2 id="mode-label">Welcome back</h2>
+          <p id="sub-label">
+            Sign in with your PSG Tech email to access Clarify.
+          </p>
+
+          <form id="auth-form" novalidate>
+            <div class="form-group">
+              <label for="email" class="form-label">College email</label>
+              <input
+                type="email"
+                id="email"
+                placeholder="rollno@psgtech.ac.in"
+                autocomplete="email"
+                required
+              />
+              <div class="form-inline-meta">
+                <span>College domain required.</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="password" class="form-label">Password</label>
+              <input
+                type="password"
+                id="password"
+                placeholder="Minimum 6 characters"
+                autocomplete="current-password"
+                required
+              />
+            </div>
+
+            <button id="submit-btn" type="submit" class="btn" style="width: 100%; margin-top: 0.5rem;">
+              Login
+            </button>
+
+            <div id="alert-box" class="alert" aria-live="polite"></div>
+
+            <div class="auth-footer-meta">
+              <strong>First time?</strong> Choose <strong>Sign up</strong> above – we’ll
+              email you a verification link.
+            </div>
+          </form>
+        </section>
+      </div>
+    </div>
+
+    <script type="module" src="/js/supabaseClient.js"></script>
+    <script type="module" src="/js/auth.js"></script>
+  </body>
+</html>
+
