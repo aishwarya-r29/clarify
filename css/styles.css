@@ -493,6 +493,7 @@ textarea {
 
 .form-group {
   margin-bottom: 0.9rem;
+  box-sizing: border-box;
 }
 
 .form-label {
