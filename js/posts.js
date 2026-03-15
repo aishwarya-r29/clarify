@@ -19,7 +19,7 @@ function formatTime(iso) {
   return `${days}d ago`;
 }
 
-function createPostCard(post, userId, refreshFeed) {
+function createPostCard(post, userId) {
   const wrapper = document.createElement("article");
   wrapper.className = "card";
   const initials = (post.author_name || post.author_email || "C")[0].toUpperCase();
@@ -35,7 +35,7 @@ function createPostCard(post, userId, refreshFeed) {
           <div class="reply-meta">
             <span class="reply-author">${r.author_name || r.author_email}</span>
             <span class="reply-sub">${r.department || ""}${r.year ? " · " + r.year : ""}</span>
-            ${r.user_id === userId ? `<button class="pill-button" data-delete-reply style="margin-left: auto; padding: 0.2rem 0.5rem; font-size: 0.7rem;">✕</button>` : ""}
+            ${r.user_id === userId ? `<button class="pill-button" data-delete-reply style="margin-left:auto; font-size:0.7rem;">✕</button>` : ""}
           </div>
           <div class="reply-text">${r.content.replace(/\n/g, "<br>")}</div>
           <div class="reply-time">${formatTime(r.created_at)}</div>
@@ -57,11 +57,7 @@ function createPostCard(post, userId, refreshFeed) {
           </span>
         </div>
       </div>
-      ${
-        post.tag
-          ? `<span class="card-chip">#${post.tag}</span>`
-          : ""
-      }
+      ${post.tag ? `<span class="card-chip">#${post.tag}</span>` : ""}
     </header>
     <div class="card-body">
       ${post.title ? `<strong>${post.title}</strong><br/>` : ""}
@@ -72,19 +68,13 @@ function createPostCard(post, userId, refreshFeed) {
       <div class="card-actions">
         <button class="pill-button" data-like>
           <span>♥</span>
-          <span>${post.likes_count || 0}</span>
+          <span>${post.post_likes?.length || 0}</span>
         </button>
         <button class="pill-button" data-comment>
           <span>💬</span>
           <span>${post.comments_count || replies.length || 0}</span>
         </button>
-        ${
-          post.user_id === userId
-            ? `<button class="pill-button" data-delete>
-                 <span>✕</span><span>Delete</span>
-               </button>`
-            : ""
-        }
+        ${post.user_id === userId ? `<button class="pill-button" data-delete><span>✕</span><span>Delete</span></button>` : ""}
       </div>
     </footer>
     <div class="replies">
@@ -106,54 +96,95 @@ function createPostCard(post, userId, refreshFeed) {
   const replySubmit = wrapper.querySelector("[data-reply-submit]");
   const deleteReplyBtns = wrapper.querySelectorAll("[data-delete-reply]");
 
+  // --- Like/unlike per user ---
   likeBtn?.addEventListener("click", async () => {
-    const { error } = await supabase
-      .from("posts")
-      .update({ likes_count: (post.likes_count || 0) + 1 })
-      .eq("id", post.id);
-    if (error) {
-      console.error(error);
-      return;
+    // Check if user already liked
+    const { data: existing, error: checkError } = await supabase
+      .from("post_likes")
+      .select("*")
+      .eq("post_id", post.id)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (checkError) return console.error(checkError);
+
+    if (existing) {
+      // Unlike
+      const { error } = await supabase.from("post_likes").delete().eq("id", existing.id);
+      if (error) return console.error(error);
+    } else {
+      // Like
+      const { error } = await supabase.from("post_likes").insert({ post_id: post.id, user_id: userId });
+      if (error) return console.error(error);
     }
-    refreshFeed();
+
+    // Refresh like count
+    const { data: likesData } = await supabase.from("post_likes").select("*").eq("post_id", post.id);
+    likeBtn.querySelector("span:last-child").textContent = likesData?.length || 0;
   });
 
+  // --- Delete post ---
   deleteBtn?.addEventListener("click", async () => {
     if (!confirm("Delete this post?")) return;
     const { error } = await supabase.from("posts").delete().eq("id", post.id);
-    if (error) console.error(error);
-    else refreshFeed();
+    if (!error) wrapper.remove();
+    else console.error(error);
   });
 
+  // --- Reply submit ---
   replySubmit?.addEventListener("click", async () => {
     const value = replyInput.value.trim();
     if (!value) return;
-    const { error } = await supabase.from("post_replies").insert({
-      post_id: post.id,
-      user_id: userId,
-      content: value,
-      author_email: currentProfile?.email || post.author_email,
-      author_name: currentProfile?.full_name || null,
-      department: currentProfile?.department || null,
-      year: currentProfile?.year || null,
-    });
-    if (error) {
-      console.error(error);
-      alert("Could not add reply.");
-      return;
-    }
+    const { data: newReply, error } = await supabase
+      .from("post_replies")
+      .insert({
+        post_id: post.id,
+        user_id: userId,
+        content: value,
+        author_email: currentProfile?.email || post.author_email,
+        author_name: currentProfile?.full_name || null,
+        department: currentProfile?.department || null,
+        year: currentProfile?.year || null,
+      })
+      .select()
+      .single();
+
+    if (error) return console.error(error);
+
+    const repliesList = wrapper.querySelector(".replies-list");
+    const replyHtml = `
+      <div class="reply-item" data-reply-id="${newReply.id}">
+        <div class="reply-meta">
+          <span class="reply-author">${newReply.author_name || newReply.author_email}</span>
+          <span class="reply-sub">${newReply.department || ""}${newReply.year ? " · " + newReply.year : ""}</span>
+          <button class="pill-button" data-delete-reply style="margin-left:auto; font-size:0.7rem;">✕</button>
+        </div>
+        <div class="reply-text">${newReply.content.replace(/\n/g, "<br>")}</div>
+        <div class="reply-time">${formatTime(newReply.created_at)}</div>
+      </div>`;
+    repliesList.insertAdjacentHTML("beforeend", replyHtml);
     replyInput.value = "";
-    refreshFeed();
+
+    // Add delete listener to new reply
+    repliesList.querySelector("[data-delete-reply]:last-child")?.addEventListener("click", async (e) => {
+      const replyItem = e.target.closest(".reply-item");
+      const replyId = replyItem.dataset.replyId;
+      if (!confirm("Delete this reply?")) return;
+      const { error } = await supabase.from("post_replies").delete().eq("id", replyId);
+      if (!error) replyItem.remove();
+      else console.error(error);
+    });
   });
 
+  // --- Delete existing replies ---
   deleteReplyBtns.forEach(btn => {
     btn?.addEventListener("click", async () => {
       const replyItem = btn.closest(".reply-item");
       const replyId = replyItem.dataset.replyId;
       if (!confirm("Delete this reply?")) return;
       const { error } = await supabase.from("post_replies").delete().eq("id", replyId);
-      if (error) console.error(error);
-      else refreshFeed();
+      if (!error) replyItem.remove();
+      else console.error(error);
     });
   });
 
@@ -167,20 +198,17 @@ async function loadHomeFeed() {
 
   const user = session.user;
 
-  // Load current profile
   const { data: profile } = await supabase
     .from("profiles")
     .select("*")
     .eq("user_id", user.id)
     .maybeSingle();
-  currentProfile = profile
-    ? { ...profile, email: user.email }
-    : { email: user.email };
+  currentProfile = profile ? { ...profile, email: user.email } : { email: user.email };
 
   async function refreshFeed() {
     let query = supabase
       .from("posts")
-      .select("*, post_replies(*)")
+      .select("*, post_replies(*), post_likes(*)")
       .or("type.is.null,type.neq.question")
       .order("created_at", { ascending: false });
 
@@ -193,10 +221,7 @@ async function loadHomeFeed() {
     }
 
     const { data: posts, error } = await query;
-    if (error) {
-      console.error(error);
-      return;
-    }
+    if (error) return console.error(error);
 
     feedContainer.innerHTML = "";
     if (!posts || posts.length === 0) {
@@ -205,16 +230,12 @@ async function loadHomeFeed() {
       return;
     }
 
-    posts.forEach((p) => {
-      feedContainer.appendChild(createPostCard(p, user.id, refreshFeed));
-    });
+    posts.forEach(p => feedContainer.appendChild(createPostCard(p, user.id)));
   }
 
   await refreshFeed();
 
-  searchInput?.addEventListener("input", () => {
-    refreshFeed();
-  });
+  searchInput?.addEventListener("input", () => refreshFeed());
 
   postBtn?.addEventListener("click", async () => {
     if (!composerText.value.trim()) return;
@@ -228,11 +249,7 @@ async function loadHomeFeed() {
       department: currentProfile?.department || null,
       year: currentProfile?.year || null,
     });
-    if (error) {
-      console.error(error);
-      alert("Could not post. Try again.");
-      return;
-    }
+    if (error) return console.error(error);
     composerText.value = "";
     await refreshFeed();
   });
@@ -241,5 +258,3 @@ async function loadHomeFeed() {
 document.addEventListener("DOMContentLoaded", () => {
   if (feedContainer) loadHomeFeed();
 });
-
-

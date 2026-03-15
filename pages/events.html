@@ -12,26 +12,20 @@
     <div class="page-wrapper">
       <header class="navbar">
         <div class="navbar-left">
-          <div class="navbar-logo">
-            <span>C</span>
-          </div>
+          <div class="navbar-logo"><span>C</span></div>
           <div class="navbar-title">
             <span class="navbar-title-main">Clarify</span>
             <span class="navbar-title-sub">PSG Tech community hub</span>
           </div>
         </div>
-        <button id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">
-          ☰
-        </button>
+        <button id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">☰</button>
         <nav id="nav-links" class="nav-links">
           <a data-nav-link href="./home.html" class="nav-link">Home</a>
           <a data-nav-link href="./ask.html" class="nav-link">Ask</a>
           <a data-nav-link href="./resources.html" class="nav-link">Resources</a>
           <a data-nav-link href="./events.html" class="nav-link">Events</a>
           <a data-nav-link href="./profile.html" class="nav-link">Profile</a>
-          <button id="logout-btn" class="nav-link nav-logout" type="button">
-            Logout
-          </button>
+          <button id="logout-btn" class="nav-link nav-logout" type="button">Logout</button>
         </nav>
       </header>
 
@@ -47,32 +41,46 @@
           </div>
         </div>
 
-        <section class="card">
+        <!-- Publish Event Form -->
+        <section class="card" id="event-form">
           <h2 class="section-title">Share an event</h2>
+
           <div class="form-group">
             <label class="form-label" for="ev-name">Event name</label>
             <input id="ev-name" type="text" placeholder="Hackathon, workshop, webinar, ..." />
           </div>
+
           <div class="form-group">
             <label class="form-label" for="ev-date">Date & time</label>
             <input id="ev-date" type="datetime-local" />
           </div>
+
           <div class="form-group">
             <label class="form-label" for="ev-desc">Description</label>
-            <textarea
-              id="ev-desc"
-              placeholder="What is this about? Who can join? Any prerequisites?"
-            ></textarea>
+            <textarea id="ev-desc" placeholder="What is this about? Who can join? Any prerequisites?"></textarea>
           </div>
+
           <div class="form-group">
             <label class="form-label" for="ev-link">Register link (optional)</label>
             <input id="ev-link" type="url" placeholder="Google form / club site link" />
           </div>
+
+          <div class="form-group">
+            <label class="form-label" for="event-location">Location (optional)</label>
+            <input id="event-location" type="text" placeholder="Room, building, or online link" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="event-tag">Tag (optional)</label>
+            <input id="event-tag" type="text" placeholder="Workshop, Hackathon, Club Meet..." />
+          </div>
+
           <div style="display: flex; justify-content: flex-end;">
             <button id="ev-btn" type="button">Publish event</button>
           </div>
         </section>
 
+        <!-- Upcoming Events Section -->
         <section class="section">
           <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;">
@@ -101,4 +109,3 @@
     <script type="module" src="../js/events.js"></script>
   </body>
 </html>
-

@@ -51,9 +51,9 @@ function renderResources(items) {
               <span>↗</span>
               <span>Open resource</span>
             </a>
-            <button class="pill-button" data-upvote style="background: rgba(34, 197, 94, 0.2); border-color: rgba(34, 197, 94, 0.5);">
+            <button class="pill-button" data-upvote>
               <span>👍</span>
-              <span>${r.upvotes_count || 0}</span>
+              <span>${r.resource_upvotes?.length || 0}</span>
             </button>
             ${
               r.uploader_id === currentProfile?.user_id
@@ -72,15 +72,48 @@ function renderResources(items) {
     const deleteBtn = el.querySelector("[data-delete]");
     
     upvoteBtn?.addEventListener("click", async () => {
-      const { error } = await supabase
-        .from("resources")
-        .update({ upvotes_count: (r.upvotes_count || 0) + 1 })
-        .eq("id", r.id);
-      if (error) {
-        console.error(error);
-        return;
+      // Check if user already upvoted this resource
+      const { data: userUpvote } = await supabase
+        .from("resource_upvotes")
+        .select("*")
+        .eq("resource_id", r.id)
+        .eq("user_id", currentProfile?.user_id)
+        .maybeSingle();
+      
+      if (userUpvote) {
+        // Remove upvote
+        await supabase.from("resource_upvotes").delete().eq("id", userUpvote.id);
+        await supabase
+          .from("resources")
+          .update({ upvotes_count: Math.max(0, (r.upvotes_count || 0) - 1) })
+          .eq("id", r.id);
+      } else {
+        // Add upvote
+        await supabase.from("resource_upvotes").insert({
+          resource_id: r.id,
+          user_id: currentProfile?.user_id
+        });
+        await supabase
+          .from("resources")
+          .update({ upvotes_count: (r.upvotes_count || 0) + 1 })
+          .eq("id", r.id);
       }
-      refresh();
+      
+      // Immediate UI update
+      const { data: upvotesData } = await supabase
+        .from("resource_upvotes")
+        .select("*")
+        .eq("resource_id", r.id);
+      
+      const newCount = upvotesData?.length || 0;
+      const isVoted = upvotesData?.some(u => u.user_id === currentProfile?.user_id);
+      
+      upvoteBtn.querySelector('span:last-child').textContent = newCount;
+      // No color change - keep consistent styling
+      
+      // Update resource object
+      r.upvotes_count = newCount;
+      r.resource_upvotes = upvotesData || [];
     });
     
     deleteBtn?.addEventListener("click", async () => {

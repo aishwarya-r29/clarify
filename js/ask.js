@@ -110,15 +110,48 @@ function createQuestionCard(question, userId, refreshQuestions) {
   const deleteReplyBtns = wrapper.querySelectorAll("[data-delete-reply]");
 
   upvoteBtn?.addEventListener("click", async () => {
-    const { error } = await supabase
-      .from("posts")
-      .update({ upvotes_count: (question.upvotes_count || 0) + 1 })
-      .eq("id", question.id);
-    if (error) {
-      console.error(error);
-      return;
+    // Check if user already upvoted this question
+    const { data: userUpvote } = await supabase
+      .from("question_upvotes")
+      .select("*")
+      .eq("question_id", question.id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    
+    if (userUpvote) {
+      // Remove upvote
+      await supabase.from("question_upvotes").delete().eq("id", userUpvote.id);
+      await supabase
+        .from("posts")
+        .update({ upvotes_count: Math.max(0, (question.upvotes_count || 0) - 1) })
+        .eq("id", question.id);
+    } else {
+      // Add upvote
+      await supabase.from("question_upvotes").insert({
+        question_id: question.id,
+        user_id: userId
+      });
+      await supabase
+        .from("posts")
+        .update({ upvotes_count: (question.upvotes_count || 0) + 1 })
+        .eq("id", question.id);
     }
-    refreshQuestions();
+    
+    // Immediate UI update
+    const { data: upvotesData } = await supabase
+      .from("question_upvotes")
+      .select("*")
+      .eq("question_id", question.id);
+    
+    const newCount = upvotesData?.length || 0;
+    const isVoted = upvotesData?.some(u => u.user_id === userId);
+    
+    upvoteBtn.querySelector('span:last-child').textContent = newCount;
+    // No color change - keep consistent styling
+    
+    // Update question object
+    question.upvotes_count = newCount;
+    question.question_upvotes = upvotesData || [];
   });
 
   deleteBtn?.addEventListener("click", async () => {
@@ -131,22 +164,60 @@ function createQuestionCard(question, userId, refreshQuestions) {
   replySubmit?.addEventListener("click", async () => {
     const value = replyInput.value.trim();
     if (!value) return;
-    const { error } = await supabase.from("post_replies").insert({
-      post_id: question.id,
-      user_id: userId,
-      content: value,
-      author_email: currentProfile?.email || question.author_email,
-      author_name: currentProfile?.full_name || null,
-      department: currentProfile?.department || null,
-      year: currentProfile?.year || null,
-    });
+    
+    const { data: newReply, error } = await supabase
+      .from("post_replies")
+      .insert({
+        post_id: question.id,
+        user_id: userId,
+        content: value,
+        author_email: currentProfile?.email || question.author_email,
+        author_name: currentProfile?.full_name || null,
+        department: currentProfile?.department || null,
+        year: currentProfile?.year || null,
+      })
+      .select()
+      .single();
+    
     if (error) {
       console.error(error);
       alert("Could not add reply.");
       return;
     }
+    
     replyInput.value = "";
-    refreshQuestions();
+    
+    // Add reply to UI immediately
+    const repliesList = wrapper.querySelector(".replies-list");
+    const emptyState = repliesList.querySelector(".muted");
+    if (emptyState) emptyState.remove();
+    
+    const replyEl = document.createElement("div");
+    replyEl.className = "reply-item";
+    replyEl.dataset.replyId = newReply.id;
+    replyEl.innerHTML = `
+      <div class="reply-meta">
+        <span class="reply-author">${newReply.author_name || newReply.author_email}</span>
+        <span class="reply-sub">${newReply.department || ""}${newReply.year ? " · " + newReply.year : ""}</span>
+        <button class="pill-button" data-delete-reply style="margin-left:auto; font-size:0.7rem;">✕</button>
+      </div>
+      <div class="reply-text">${newReply.content.replace(/\n/g, "<br>")}</div>
+      <div class="reply-time">${formatTime(newReply.created_at)}</div>
+    `;
+    repliesList.appendChild(replyEl);
+    
+    // Add delete listener to new reply
+    replyEl.querySelector("[data-delete-reply]")?.addEventListener("click", async () => {
+      if (!confirm("Delete this reply?")) return;
+      const { error } = await supabase.from("post_replies").delete().eq("id", newReply.id);
+      if (!error) replyEl.remove();
+      else console.error(error);
+    });
+    
+    // Update comment count
+    const commentBtn = wrapper.querySelector("[data-comment] span:last-child");
+    const currentCount = parseInt(commentBtn.textContent) || 0;
+    commentBtn.textContent = currentCount + 1;
   });
 
   deleteReplyBtns.forEach(btn => {
@@ -155,8 +226,15 @@ function createQuestionCard(question, userId, refreshQuestions) {
       const replyId = replyItem.dataset.replyId;
       if (!confirm("Delete this reply?")) return;
       const { error } = await supabase.from("post_replies").delete().eq("id", replyId);
-      if (error) console.error(error);
-      else refreshQuestions();
+      if (!error) {
+        replyItem.remove();
+        // Update comment count
+        const commentBtn = wrapper.querySelector("[data-comment] span:last-child");
+        const currentCount = parseInt(commentBtn.textContent) || 0;
+        commentBtn.textContent = Math.max(0, currentCount - 1);
+      } else {
+        console.error(error);
+      }
     });
   });
 
