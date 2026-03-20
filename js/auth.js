@@ -11,7 +11,11 @@ const alertBox = document.getElementById("alert-box");
 const form = document.getElementById("auth-form");
 
 let mode = "login";
-let isSubmitting = false; // 🔥 CRITICAL FIX
+let isSubmitting = false;
+
+// 🔥 NEW: cooldown system
+let lastEmailSentAt = 0;
+const EMAIL_COOLDOWN = 60000; // 60 seconds
 
 // ---------------- ALERT ----------------
 function showAlert(message, type = "error") {
@@ -65,7 +69,7 @@ toggleSignupBtn?.addEventListener("click", () => setMode("signup"));
 async function handleSubmit(e) {
   e.preventDefault();
 
-  // 🔥 PREVENT MULTIPLE CALLS (fixes 429)
+  // 🔥 Prevent multiple rapid submissions
   if (isSubmitting) return;
   isSubmitting = true;
 
@@ -101,6 +105,14 @@ async function handleSubmit(e) {
   try {
     // ---------------- SIGNUP ----------------
     if (mode === "signup") {
+      const now = Date.now();
+
+      // 🔥 Cooldown check (prevents 429)
+      if (now - lastEmailSentAt < EMAIL_COOLDOWN) {
+        showAlert("⏳ Please wait 60 seconds before requesting another email.");
+        return;
+      }
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -110,6 +122,8 @@ async function handleSubmit(e) {
       });
 
       if (error) throw error;
+
+      lastEmailSentAt = Date.now();
 
       showAlert(
         "✅ Account created! Check your email to verify before logging in.",
@@ -142,7 +156,7 @@ async function handleSubmit(e) {
         return;
       }
 
-      // Check profile
+      // Check profile existence
       const { data: profile } = await supabase
         .from("profiles")
         .select("id")
@@ -157,16 +171,23 @@ async function handleSubmit(e) {
     }
   } catch (err) {
     console.error(err);
-    showAlert(err.message || "Something went wrong.");
+
+    // 🔥 Better error handling
+    if (err.message?.toLowerCase().includes("rate limit")) {
+      showAlert("⏳ Too many requests. Please wait a minute and try again.");
+    } else if (err.message?.includes("User already registered")) {
+      showAlert("⚠️ This email is already registered. Try logging in.");
+    } else {
+      showAlert(err.message || "Something went wrong.");
+    }
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent =
       mode === "login" ? "Login" : "Create account";
 
-    // 🔥 RELEASE LOCK
     isSubmitting = false;
   }
 }
 
-// Attach ONLY once
+// Attach only once
 form?.addEventListener("submit", handleSubmit);
